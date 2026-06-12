@@ -10,7 +10,7 @@ server:
   network: "192.168.170.0"
   netmask: "255.255.255.0"
   topology: subnet
-  cipher: AES-256-GCM
+  cipher: AES-128-GCM  # Чуть безопаснее 256, но 128 быстрее
   auth: SHA256
   keepalive: "10 60"
   tls_crypt: true        # false = use tls-auth instead
