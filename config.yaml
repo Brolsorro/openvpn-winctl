@@ -1,0 +1,27 @@
+# OpenVPN Manager configuration
+# Place this file next to openvpn-manager.exe
+
+openvpn_root: "C:\\Program Files\\OpenVPN"
+
+server:
+  public_ip: ""          # leave empty for auto-detect via api.ipify.org
+  port: 1194
+  proto: udp4
+  network: "192.168.170.0"
+  netmask: "255.255.255.0"
+  topology: subnet
+  cipher: AES-256-GCM
+  auth: SHA256
+  keepalive: "10 60"
+  tls_crypt: true        # false = use tls-auth instead
+  verb: 3
+  fast_io: true
+  snd_buf: 524288
+  rcv_buf: 524288
+  extra_push_routes: []  # e.g. ["route 10.0.0.0 255.0.0.0"]
+
+client:
+  inline_keys: true      # embed certs into .ovpn (recommended)
+
+backup:
+  enabled: true

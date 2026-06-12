@@ -1,0 +1,19 @@
+# Client: {{.Name}}  Generated: {{.Timestamp}}
+client
+dev tun
+proto {{.Proto}}
+remote {{.PublicIP}} {{.Port}}
+resolv-retry infinite
+nobind
+persist-key
+persist-tun
+remote-cert-tls server
+cipher {{.Cipher}}
+auth {{.Auth}}
+auth-nocache
+route-nopull
+route {{.Network}} {{.Netmask}}
+verb {{.Verb}}
+{{if .FastIO}}fast-io
+{{end}}sndbuf {{.SndBuf}}
+rcvbuf {{.RcvBuf}}
