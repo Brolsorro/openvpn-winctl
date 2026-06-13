@@ -38,7 +38,7 @@ import (
 
 	"golang.org/x/term"
 
-	"github.com/YOUR_GITHUB_USERNAME/ovpn-manager/internal/config"
+	"github.com/Brolsorro/ovpn-manager/internal/config"
 )
 
 // Commander is the interface for running easyrsa commands.
@@ -398,5 +398,3 @@ func copyFile(src, dst string, mode os.FileMode) error {
 	_, err = io.Copy(out, in)
 	return err
 }
-
-

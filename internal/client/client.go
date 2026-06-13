@@ -16,8 +16,8 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/YOUR_GITHUB_USERNAME/ovpn-manager/internal/config"
-	"github.com/YOUR_GITHUB_USERNAME/ovpn-manager/internal/easyrsa"
+	"github.com/Brolsorro/ovpn-manager/internal/config"
+	"github.com/Brolsorro/ovpn-manager/internal/easyrsa"
 )
 
 //go:embed templates/client.ovpn.tmpl

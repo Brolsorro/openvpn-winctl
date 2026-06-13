@@ -11,21 +11,21 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/YOUR_GITHUB_USERNAME/ovpn-manager/internal/config"
+	"github.com/Brolsorro/ovpn-manager/internal/config"
 )
 
 //go:embed templates/server.ovpn.tmpl
 var serverTmpl string
 
 type serverData struct {
-	Timestamp     string
-	Port          int
-	Proto         string
-	ConfigDir     string
-	TLSLine       string
-	CRLLine       string
-	NoCompression bool   // true = emit "allow-compression no"
-	Network       string
+	Timestamp       string
+	Port            int
+	Proto           string
+	ConfigDir       string
+	TLSLine         string
+	CRLLine         string
+	NoCompression   bool // true = emit "allow-compression no"
+	Network         string
 	Netmask         string
 	Topology        string
 	Cipher          string
@@ -58,29 +58,29 @@ func buildServerData(cfg *config.Config) serverData {
 	}
 
 	return serverData{
-		Timestamp:     time.Now().Format("2006-01-02 15:04:05"),
-		Port:          cfg.Server.Port,
-		Proto:         cfg.Server.Proto,
-		ConfigDir:     cfg.ConfigDir,
-		TLSLine:       tlsLine,
-		CRLLine:       crlLine,
-		NoCompression: !cfg.Server.AllowCompression,
-		Network:       cfg.Server.Network,
-		Netmask:          cfg.Server.Netmask,
-		Topology:         cfg.Server.Topology,
-		Cipher:           cfg.Server.Cipher,
-		DataCiphers:      cfg.Server.DataCiphers,
-		Auth:             cfg.Server.Auth,
-		Keepalive:        cfg.Server.Keepalive,
-		PushRoutes:       cfg.Server.PushRoutes,
-		ExtraPushRoutes:  cfg.Server.ExtraPushRoutes,
-		LogsDir:          cfg.LogsDir,
-		Verb:             cfg.Server.Verb,
-		RDPEnabled:       cfg.Server.RDP.Enabled,
-		SndBuf:           cfg.Server.RDP.SndBuf,
-		RcvBuf:           cfg.Server.RDP.RcvBuf,
-		TunMTU:           cfg.Server.RDP.TunMTU,
-		MSSFix:           cfg.Server.RDP.MSSFix,
+		Timestamp:       time.Now().Format("2006-01-02 15:04:05"),
+		Port:            cfg.Server.Port,
+		Proto:           cfg.Server.Proto,
+		ConfigDir:       cfg.ConfigDir,
+		TLSLine:         tlsLine,
+		CRLLine:         crlLine,
+		NoCompression:   !cfg.Server.AllowCompression,
+		Network:         cfg.Server.Network,
+		Netmask:         cfg.Server.Netmask,
+		Topology:        cfg.Server.Topology,
+		Cipher:          cfg.Server.Cipher,
+		DataCiphers:     cfg.Server.DataCiphers,
+		Auth:            cfg.Server.Auth,
+		Keepalive:       cfg.Server.Keepalive,
+		PushRoutes:      cfg.Server.PushRoutes,
+		ExtraPushRoutes: cfg.Server.ExtraPushRoutes,
+		LogsDir:         cfg.LogsDir,
+		Verb:            cfg.Server.Verb,
+		RDPEnabled:      cfg.Server.RDP.Enabled,
+		SndBuf:          cfg.Server.RDP.SndBuf,
+		RcvBuf:          cfg.Server.RDP.RcvBuf,
+		TunMTU:          cfg.Server.RDP.TunMTU,
+		MSSFix:          cfg.Server.RDP.MSSFix,
 	}
 }
 
