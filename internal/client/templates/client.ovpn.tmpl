@@ -13,6 +13,7 @@ remote-cert-tls server
 cipher {{.Cipher}}
 {{if .DataCiphers}}data-ciphers {{.DataCiphers}}
 {{end}}allow-compression no
+auth-nocache
 
 {{if .RouteNoPull}}# Routes managed locally
 route-nopull

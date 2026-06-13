@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"github.com/Brolsorro/ovpn-manager/internal/config"
 	"github.com/Brolsorro/ovpn-manager/internal/easyrsa"
@@ -56,6 +57,15 @@ func (m *Manager) Init(ctx context.Context, withCAPassword bool) error {
 	fmt.Println("[pki] Generating ta.key...")
 	if err := m.genTAKey(); err != nil {
 		return err
+	}
+
+	// Import ta.key into PKI so EasyRSA includes it in inline files.
+	// EasyRSA expects the TLS key at pki/private/easyrsa-tls.key.
+	// Without this, "easyrsa build-client-full" warns "Missing TLS Key".
+	fmt.Println("[pki] Importing ta.key into PKI...")
+	if err := m.rs.Run(ctx, "import-tls-key "+toUnixPath(m.cfg.TaKey)); err != nil {
+		// Non-fatal — warning only, inline file generation still works
+		fmt.Printf("  [warn] import-tls-key: %v\n", err)
 	}
 
 	if err := m.SyncConfigDir(); err != nil {
@@ -120,6 +130,11 @@ func (m *Manager) genTAKey() error {
 		return fmt.Errorf("ta.key not created at %s", m.cfg.TaKey)
 	}
 	return nil
+}
+
+// toUnixPath converts Windows path to forward slashes for easyrsa/bash.
+func toUnixPath(p string) string {
+	return strings.ReplaceAll(p, `\`, `/`)
 }
 
 func copyFile(src, dst string) error {

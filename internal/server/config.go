@@ -18,14 +18,14 @@ import (
 var serverTmpl string
 
 type serverData struct {
-	Timestamp       string
-	Port            int
-	Proto           string
-	ConfigDir       string
-	TLSLine         string
-	CRLLine         string
-	NoCompression   bool // true = emit "allow-compression no"
-	Network         string
+	Timestamp     string
+	Port          int
+	Proto         string
+	ConfigDir     string
+	TLSLine       string
+	CRLLine       string
+	NoCompression bool   // true = emit "allow-compression no"
+	Network       string
 	Netmask         string
 	Topology        string
 	Cipher          string
@@ -45,42 +45,47 @@ type serverData struct {
 }
 
 func buildServerData(cfg *config.Config) serverData {
-	tlsLine := fmt.Sprintf(`tls-crypt "%s"`, cfg.TaKey)
+	tlsLine := fmt.Sprintf(`tls-crypt "%s"`, filepath.ToSlash(cfg.TaKey))
 	if !cfg.Server.TLSCrypt {
-		tlsLine = fmt.Sprintf(`tls-auth "%s" 0`, cfg.TaKey)
+		tlsLine = fmt.Sprintf(`tls-auth "%s" 0`, filepath.ToSlash(cfg.TaKey))
 	}
 
 	// Include crl-verify only if crl.pem actually exists
 	crlPath := filepath.Join(cfg.ConfigDir, "crl.pem")
 	crlLine := ""
 	if _, err := os.Stat(crlPath); err == nil {
-		crlLine = fmt.Sprintf(`crl-verify "%s"`, crlPath)
+		crlLine = fmt.Sprintf(`crl-verify "%s"`, filepath.ToSlash(crlPath))
 	}
 
+	// OpenVPN requires forward slashes or double backslashes in paths.
+	// Forward slashes are simpler and officially supported on Windows.
+	configDir := filepath.ToSlash(cfg.ConfigDir)
+	logsDir   := filepath.ToSlash(cfg.LogsDir)
+
 	return serverData{
-		Timestamp:       time.Now().Format("2006-01-02 15:04:05"),
-		Port:            cfg.Server.Port,
-		Proto:           cfg.Server.Proto,
-		ConfigDir:       cfg.ConfigDir,
-		TLSLine:         tlsLine,
-		CRLLine:         crlLine,
-		NoCompression:   !cfg.Server.AllowCompression,
-		Network:         cfg.Server.Network,
-		Netmask:         cfg.Server.Netmask,
-		Topology:        cfg.Server.Topology,
-		Cipher:          cfg.Server.Cipher,
-		DataCiphers:     cfg.Server.DataCiphers,
-		Auth:            cfg.Server.Auth,
-		Keepalive:       cfg.Server.Keepalive,
-		PushRoutes:      cfg.Server.PushRoutes,
-		ExtraPushRoutes: cfg.Server.ExtraPushRoutes,
-		LogsDir:         cfg.LogsDir,
-		Verb:            cfg.Server.Verb,
-		RDPEnabled:      cfg.Server.RDP.Enabled,
-		SndBuf:          cfg.Server.RDP.SndBuf,
-		RcvBuf:          cfg.Server.RDP.RcvBuf,
-		TunMTU:          cfg.Server.RDP.TunMTU,
-		MSSFix:          cfg.Server.RDP.MSSFix,
+		Timestamp:     time.Now().Format("2006-01-02 15:04:05"),
+		Port:          cfg.Server.Port,
+		Proto:         cfg.Server.Proto,
+		ConfigDir:     configDir,
+		TLSLine:       tlsLine,
+		CRLLine:       crlLine,
+		NoCompression: !cfg.Server.AllowCompression,
+		Network:       cfg.Server.Network,
+		Netmask:          cfg.Server.Netmask,
+		Topology:         cfg.Server.Topology,
+		Cipher:           cfg.Server.Cipher,
+		DataCiphers:      cfg.Server.DataCiphers,
+		Auth:             cfg.Server.Auth,
+		Keepalive:        cfg.Server.Keepalive,
+		PushRoutes:       cfg.Server.PushRoutes,
+		ExtraPushRoutes:  cfg.Server.ExtraPushRoutes,
+		LogsDir:          logsDir,
+		Verb:             cfg.Server.Verb,
+		RDPEnabled:       cfg.Server.RDP.Enabled,
+		SndBuf:           cfg.Server.RDP.SndBuf,
+		RcvBuf:           cfg.Server.RDP.RcvBuf,
+		TunMTU:           cfg.Server.RDP.TunMTU,
+		MSSFix:           cfg.Server.RDP.MSSFix,
 	}
 }
 
@@ -127,7 +132,7 @@ func EnsureCRLVerify(cfg *config.Config) error {
 		return err
 	}
 	defer f.Close()
-	crlPath := filepath.Join(cfg.ConfigDir, "crl.pem")
+	crlPath := filepath.ToSlash(filepath.Join(cfg.ConfigDir, "crl.pem"))
 	_, err = fmt.Fprintf(f, "\ncrl-verify \"%s\"\n", crlPath)
 	return err
 }

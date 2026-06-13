@@ -6,10 +6,10 @@ proto {{.Proto}}
 dev tun
 {{if .NoCompression}}allow-compression no
 {{end}}
-ca "{{.ConfigDir}}\ca.crt"
-cert "{{.ConfigDir}}\server.crt"
-key "{{.ConfigDir}}\server.key"
-dh "{{.ConfigDir}}\dh.pem"
+ca "{{.ConfigDir}}/ca.crt"
+cert "{{.ConfigDir}}/server.crt"
+key "{{.ConfigDir}}/server.key"
+dh "{{.ConfigDir}}/dh.pem"
 {{.TLSLine}}
 {{if .CRLLine}}{{.CRLLine}}
 {{end}}
@@ -26,8 +26,8 @@ keepalive {{.Keepalive}}
 {{range .PushRoutes}}push "{{.}}"
 {{end}}{{range .ExtraPushRoutes}}push "{{.}}"
 {{end}}
-status "{{.LogsDir}}\openvpn-status.log"
-log    "{{.LogsDir}}\openvpn.log"
+status "{{.LogsDir}}/openvpn-status.log"
+log    "{{.LogsDir}}/openvpn.log"
 verb {{.Verb}}
 {{if .RDPEnabled}}
 # RDP/performance optimizations
