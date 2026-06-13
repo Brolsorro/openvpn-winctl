@@ -55,7 +55,7 @@ func (m *Manager) Add(ctx context.Context, name string, withPassword bool) error
 	}
 
 	certFile := filepath.Join(m.cfg.PkiDir, "issued", name+".crt")
-	keyFile  := filepath.Join(m.cfg.PkiDir, "private", name+".key")
+	keyFile := filepath.Join(m.cfg.PkiDir, "private", name+".key")
 	for _, f := range []string{certFile, keyFile} {
 		if _, err := os.Stat(f); err != nil {
 			return fmt.Errorf("expected PKI file not found: %s", f)
@@ -127,7 +127,7 @@ func (m *Manager) Renew(ctx context.Context, name string) error {
 	}
 	fmt.Println("[client] Certificate renewed. Rebuilding .ovpn...")
 	certFile := filepath.Join(m.cfg.PkiDir, "issued", name+".crt")
-	keyFile  := filepath.Join(m.cfg.PkiDir, "private", name+".key")
+	keyFile := filepath.Join(m.cfg.PkiDir, "private", name+".key")
 	return m.writeOVPN(name, certFile, keyFile)
 }
 
@@ -194,7 +194,7 @@ func (m *Manager) ListVerbose() error {
 		status := map[string]string{"V": "valid", "R": "revoked", "E": "expired"}[r.Status]
 		expStr, daysStr := "-", "-"
 		if r.Status == "V" {
-			expStr  = r.ExpiresAt.Format("2006-01-02")
+			expStr = r.ExpiresAt.Format("2006-01-02")
 			daysStr = fmt.Sprintf("%d", int(time.Until(r.ExpiresAt).Hours()/24))
 		}
 		ovpn := ""
@@ -287,10 +287,10 @@ func (m *Manager) writeOVPN(name, certFile, keyFile string) error {
 }
 
 func buildInlineSection(cfg *config.Config, certFile, keyFile string) string {
-	ca   := readFile(filepath.Join(cfg.ConfigDir, "ca.crt"))
-	ta   := readFile(cfg.TaKey)
+	ca := readFile(filepath.Join(cfg.ConfigDir, "ca.crt"))
+	ta := readFile(cfg.TaKey)
 	cert := readFile(certFile)
-	key  := readFile(keyFile)
+	key := readFile(keyFile)
 
 	var sb strings.Builder
 	if cfg.Server.TLSCrypt {
@@ -364,11 +364,8 @@ func readFile(path string) string {
 	if err != nil {
 		return fmt.Sprintf("# ERROR: cannot read %s\n", path)
 	}
-	// Normalize line endings: 
- -> 
-
-	// OpenVPN inline parser accepts both, but 
- is cleaner in .ovpn files
+	// Normalize line endings: \r\n -> \n
+	// OpenVPN inline parser accepts both, but \n is cleaner in .ovpn files
 	normalized := strings.ReplaceAll(string(data), "\r\n", "\n")
 	return strings.TrimRight(normalized, "\r\n")
 }

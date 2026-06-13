@@ -123,7 +123,7 @@ func discover() string {
 		if _, err := os.Stat(example); err == nil {
 			fmt.Fprintf(os.Stderr,
 				"hint: config.yaml not found. Copy the example and edit it:\n"+
-				"  copy "%s" "%s"\n",
+				`  copy "%s" "%s"`+"\n",
 				example, filepath.Join(dir, "config.yaml"),
 			)
 			break
