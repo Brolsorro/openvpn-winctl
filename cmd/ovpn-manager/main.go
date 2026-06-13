@@ -57,8 +57,8 @@ Commands:
   service autostart --disable   Disable autostart (set to manual)
   service log [-f] [-n <lines>] [-file <openvpn|status>]
 
-  log [-f] [-n <lines>] [-file <openvpn|status>]
-      Show OpenVPN log. -f = follow mode (Ctrl+C to stop)
+  log [-f] [-n <lines>] [-file <server|status>]
+      Show OpenVPN log. Default: service log (server.log). -f = follow mode
   firewall enable|disable       [--port <n>] [--proto <udp|tcp>]
   firewall status
   routing enable|disable|status
@@ -370,10 +370,17 @@ func runLog(ctx context.Context, cfg *config.Config, args []string) {
 	fs := flag.NewFlagSet("log", flag.ExitOnError)
 	follow := fs.Bool("f", false, "follow log output (like tail -f)")
 	lines  := fs.Int("n", 50, "number of lines to show")
-	which  := fs.String("file", "openvpn", "log file: openvpn or status")
+	// "server" = service log (C:\ProgramData\OpenVPN\Log\server.log)
+	// "status" = connection status log
+	which  := fs.String("file", "server", "log file: server or status")
 	fs.Parse(args)
 
-	logFile := filepath.Join(cfg.LogsDir, "openvpn.log")
+	// When running as a Windows service, OpenVPN writes to:
+	// C:\ProgramData\OpenVPN\Log\<config-name>.log
+	// The config-auto directory uses "server.ovpn" so the log is "server.log"
+	serviceLogDir := `C:\ProgramData\OpenVPN\Log`
+	logFile := filepath.Join(serviceLogDir, "server.log")
+
 	if *which == "status" {
 		logFile = filepath.Join(cfg.LogsDir, "openvpn-status.log")
 	}

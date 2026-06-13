@@ -25,7 +25,8 @@ type serverData struct {
 	TLSLine       string
 	CRLLine       string
 	NoCompression bool   // true = emit "allow-compression no"
-	WindowsDriver string
+	WindowsDriver string // empty on 2.7+ (deprecated)
+	PersistKey    bool   // false on 2.7+ (deprecated, always on)
 	Network       string
 	Netmask         string
 	Topology        string
@@ -35,7 +36,7 @@ type serverData struct {
 	Keepalive       string
 	PushRoutes      []string
 	ExtraPushRoutes []string
-	LogsDir         string
+	StatusLog       string // path to openvpn-status.log
 	Verb            int
 	// RDP optimizations
 	RDPEnabled bool
@@ -71,7 +72,9 @@ func buildServerData(cfg *config.Config) serverData {
 		TLSLine:       tlsLine,
 		CRLLine:       crlLine,
 		NoCompression: !cfg.Server.AllowCompression,
-		WindowsDriver: cfg.Server.WindowsDriver,
+		// Deprecated in 2.7+: windows-driver and persist-key
+		WindowsDriver: windowsDriver(cfg),
+		PersistKey:    cfg.OpenVPNVersion < 27,
 		Network:       cfg.Server.Network,
 		Netmask:          cfg.Server.Netmask,
 		Topology:         cfg.Server.Topology,
@@ -81,7 +84,7 @@ func buildServerData(cfg *config.Config) serverData {
 		Keepalive:        cfg.Server.Keepalive,
 		PushRoutes:       cfg.Server.PushRoutes,
 		ExtraPushRoutes:  cfg.Server.ExtraPushRoutes,
-		LogsDir:          logsDir,
+		StatusLog:        logsDir + "/openvpn-status.log",
 		Verb:             cfg.Server.Verb,
 		RDPEnabled:       cfg.Server.RDP.Enabled,
 		SndBuf:           cfg.Server.RDP.SndBuf,
@@ -89,6 +92,15 @@ func buildServerData(cfg *config.Config) serverData {
 		TunMTU:           cfg.Server.RDP.TunMTU,
 		MSSFix:           cfg.Server.RDP.MSSFix,
 	}
+}
+
+// windowsDriver returns the windows-driver value for OpenVPN < 2.7.
+// In 2.7+ the directive is deprecated — DCO is the default driver.
+func windowsDriver(cfg *config.Config) string {
+	if cfg.OpenVPNVersion >= 27 {
+		return ""
+	}
+	return cfg.Server.WindowsDriver
 }
 
 // WriteConfig generates config-auto/server.ovpn from the embedded template.

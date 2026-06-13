@@ -16,8 +16,8 @@ dh "{{.ConfigDir}}/dh.pem"
 {{end}}
 server {{.Network}} {{.Netmask}}
 topology {{.Topology}}
-persist-key
-persist-tun
+{{if .PersistKey}}persist-key
+{{end}}persist-tun
 
 cipher {{.Cipher}}
 {{if .DataCiphers}}data-ciphers {{.DataCiphers}}
@@ -27,8 +27,10 @@ keepalive {{.Keepalive}}
 {{range .PushRoutes}}push "{{.}}"
 {{end}}{{range .ExtraPushRoutes}}push "{{.}}"
 {{end}}
-status "{{.LogsDir}}/openvpn-status.log"
-log    "{{.LogsDir}}/openvpn.log"
+# When running as a Windows service, OpenVPN writes to:
+# C:\ProgramData\OpenVPN\Log\<config-name>.log
+# The status file below is written by OpenVPN regardless of service mode.
+status "{{.StatusLog}}"
 verb {{.Verb}}
 {{if .RDPEnabled}}
 # RDP/performance optimizations

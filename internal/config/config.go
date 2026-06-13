@@ -55,10 +55,11 @@ type Backup struct {
 
 // Config is the root configuration structure.
 type Config struct {
-	OpenVPNRoot string `yaml:"openvpn_root"`
-	Server      Server `yaml:"server"`
-	Client      Client `yaml:"client"`
-	Backup      Backup `yaml:"backup"`
+	OpenVPNRoot   string `yaml:"openvpn_root"`
+	OpenVPNVersion int   `yaml:"openvpn_version"` // major version: 26 = 2.6.x, 27 = 2.7.x
+	Server        Server `yaml:"server"`
+	Client        Client `yaml:"client"`
+	Backup        Backup `yaml:"backup"`
 
 	// Derived paths — computed from OpenVPNRoot, not in YAML.
 	EasyRsaDir string
@@ -139,7 +140,8 @@ func discover() string {
 
 func defaults() *Config {
 	return &Config{
-		OpenVPNRoot: `C:\Program Files\OpenVPN`,
+		OpenVPNRoot:    `C:\Program Files\OpenVPN`,
+		OpenVPNVersion: 26,
 		Server: Server{
 			WindowsDriver:    "wintun",
 		Port:             1194,
@@ -181,7 +183,7 @@ func (c *Config) derive() {
 	c.ConfigDir  = filepath.Join(root, "config")
 	c.ConfigAuto = filepath.Join(root, "config-auto")
 	c.ClientDir  = filepath.Join(root, "clients")
-	c.LogsDir    = `C:\ProgramData\OpenVPN\logs`
+	c.LogsDir    = `C:\ProgramData\OpenVPN\log`
 	c.BackupDir  = filepath.Join(root, "pki-backups")
 	c.PkiDir     = filepath.Join(root, "easy-rsa", "pki")
 	c.TaKey      = filepath.Join(root, "config", "ta.key")
