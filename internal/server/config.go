@@ -11,89 +11,108 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/Brolsorro/ovpn-manager/internal/config"
+	"github.com/YOUR_GITHUB_USERNAME/ovpn-manager/internal/config"
 )
 
 //go:embed templates/server.ovpn.tmpl
 var serverTmpl string
 
 type serverData struct {
-	Timestamp  string
-	Port       int
-	Proto      string
-	ConfigDir  string
-	TLSLine    string
-	Network    string
-	Netmask    string
-	Topology   string
-	Cipher     string
-	Auth       string
-	Keepalive  string
-	FastIO     bool
+	Timestamp     string
+	Port          int
+	Proto         string
+	ConfigDir     string
+	TLSLine       string
+	CRLLine       string
+	NoCompression bool   // true = emit "allow-compression no"
+	Network       string
+	Netmask         string
+	Topology        string
+	Cipher          string
+	DataCiphers     string
+	Auth            string
+	Keepalive       string
+	PushRoutes      []string
+	ExtraPushRoutes []string
+	LogsDir         string
+	Verb            int
+	// RDP optimizations
+	RDPEnabled bool
 	SndBuf     int
 	RcvBuf     int
-	LogsDir    string
-	Verb       int
-	PushRoutes string
+	TunMTU     int
+	MSSFix     int
 }
 
-// WriteConfig generates config-auto/server.ovpn from the embedded template.
-func WriteConfig(cfg *config.Config) error {
+func buildServerData(cfg *config.Config) serverData {
 	tlsLine := fmt.Sprintf(`tls-crypt "%s"`, cfg.TaKey)
 	if !cfg.Server.TLSCrypt {
 		tlsLine = fmt.Sprintf(`tls-auth "%s" 0`, cfg.TaKey)
 	}
 
-	pushRoutes := ""
-	if len(cfg.Server.ExtraPushRoutes) > 0 {
-		lines := make([]string, len(cfg.Server.ExtraPushRoutes))
-		for i, r := range cfg.Server.ExtraPushRoutes {
-			lines[i] = fmt.Sprintf(`push "%s"`, r)
-		}
-		pushRoutes = strings.Join(lines, "\n")
+	// Include crl-verify only if crl.pem actually exists
+	crlPath := filepath.Join(cfg.ConfigDir, "crl.pem")
+	crlLine := ""
+	if _, err := os.Stat(crlPath); err == nil {
+		crlLine = fmt.Sprintf(`crl-verify "%s"`, crlPath)
 	}
 
-	data := serverData{
-		Timestamp:  time.Now().Format("2006-01-02 15:04:05"),
-		Port:       cfg.Server.Port,
-		Proto:      cfg.Server.Proto,
-		ConfigDir:  cfg.ConfigDir,
-		TLSLine:    tlsLine,
-		Network:    cfg.Server.Network,
-		Netmask:    cfg.Server.Netmask,
-		Topology:   cfg.Server.Topology,
-		Cipher:     cfg.Server.Cipher,
-		Auth:       cfg.Server.Auth,
-		Keepalive:  cfg.Server.Keepalive,
-		FastIO:     cfg.Server.FastIO,
-		SndBuf:     cfg.Server.SndBuf,
-		RcvBuf:     cfg.Server.RcvBuf,
-		LogsDir:    cfg.LogsDir,
-		Verb:       cfg.Server.Verb,
-		PushRoutes: pushRoutes,
+	return serverData{
+		Timestamp:     time.Now().Format("2006-01-02 15:04:05"),
+		Port:          cfg.Server.Port,
+		Proto:         cfg.Server.Proto,
+		ConfigDir:     cfg.ConfigDir,
+		TLSLine:       tlsLine,
+		CRLLine:       crlLine,
+		NoCompression: !cfg.Server.AllowCompression,
+		Network:       cfg.Server.Network,
+		Netmask:          cfg.Server.Netmask,
+		Topology:         cfg.Server.Topology,
+		Cipher:           cfg.Server.Cipher,
+		DataCiphers:      cfg.Server.DataCiphers,
+		Auth:             cfg.Server.Auth,
+		Keepalive:        cfg.Server.Keepalive,
+		PushRoutes:       cfg.Server.PushRoutes,
+		ExtraPushRoutes:  cfg.Server.ExtraPushRoutes,
+		LogsDir:          cfg.LogsDir,
+		Verb:             cfg.Server.Verb,
+		RDPEnabled:       cfg.Server.RDP.Enabled,
+		SndBuf:           cfg.Server.RDP.SndBuf,
+		RcvBuf:           cfg.Server.RDP.RcvBuf,
+		TunMTU:           cfg.Server.RDP.TunMTU,
+		MSSFix:           cfg.Server.RDP.MSSFix,
 	}
+}
 
-	tmpl, err := template.New("server").Parse(serverTmpl)
-	if err != nil {
-		return fmt.Errorf("parse server template: %w", err)
-	}
+// WriteConfig generates config-auto/server.ovpn from the embedded template.
+// If the file already exists it is overwritten (use UpdateConfig for safe merge).
+func WriteConfig(cfg *config.Config) error {
+	return writeConfigTo(cfg, filepath.Join(cfg.ConfigAuto, "server.ovpn"))
+}
 
+// UpdateConfig safely updates server.ovpn:
+//   - If no existing file → write fresh config
+//   - If file exists → backup it, then write new config
+//     Non-conflicting manual additions (comments, extra directives) are preserved
+//     in the backup; the new file is authoritative from config.yaml.
+//
+// "Safe" here means: you never lose the previous working config —
+// it's always in pki-backups/server_<timestamp>.ovpn before any change.
+func UpdateConfig(cfg *config.Config) error {
 	outPath := filepath.Join(cfg.ConfigAuto, "server.ovpn")
-	f, err := os.Create(outPath)
-	if err != nil {
-		return fmt.Errorf("create %s: %w", outPath, err)
-	}
-	defer f.Close()
 
-	if err := tmpl.Execute(f, data); err != nil {
-		return fmt.Errorf("render server template: %w", err)
+	if _, err := os.Stat(outPath); err == nil {
+		// Backup existing config before overwriting
+		if err := backupServerConfig(outPath, cfg.BackupDir); err != nil {
+			return fmt.Errorf("backup existing config: %w", err)
+		}
 	}
 
-	fmt.Printf("[config] Server config written: %s\n", outPath)
-	return nil
+	return writeConfigTo(cfg, outPath)
 }
 
 // EnsureCRLVerify appends crl-verify to server.ovpn if not already present.
+// Called automatically after client revoke.
 func EnsureCRLVerify(cfg *config.Config) error {
 	path := filepath.Join(cfg.ConfigAuto, "server.ovpn")
 	data, err := os.ReadFile(path)
@@ -108,6 +127,52 @@ func EnsureCRLVerify(cfg *config.Config) error {
 		return err
 	}
 	defer f.Close()
-	_, err = fmt.Fprintf(f, "\ncrl-verify \"%s\\crl.pem\"\n", cfg.ConfigDir)
+	crlPath := filepath.Join(cfg.ConfigDir, "crl.pem")
+	_, err = fmt.Fprintf(f, "\ncrl-verify \"%s\"\n", crlPath)
 	return err
+}
+
+// ──────────────────────────────────────────────
+// internal
+
+func writeConfigTo(cfg *config.Config, outPath string) error {
+	// Register "not" function for template — Go templates don't have it built-in
+	tmpl, err := template.New("server").Parse(serverTmpl)
+	if err != nil {
+		return fmt.Errorf("parse server template: %w", err)
+	}
+
+	if err := os.MkdirAll(filepath.Dir(outPath), 0o755); err != nil {
+		return fmt.Errorf("mkdir: %w", err)
+	}
+
+	f, err := os.Create(outPath)
+	if err != nil {
+		return fmt.Errorf("create %s: %w", outPath, err)
+	}
+	defer f.Close()
+
+	if err := tmpl.Execute(f, buildServerData(cfg)); err != nil {
+		return fmt.Errorf("render server template: %w", err)
+	}
+
+	fmt.Printf("[config] Server config written: %s\n", outPath)
+	return nil
+}
+
+func backupServerConfig(srcPath, backupDir string) error {
+	if err := os.MkdirAll(backupDir, 0o755); err != nil {
+		return err
+	}
+	ts := time.Now().Format("20060102_150405")
+	dst := filepath.Join(backupDir, "server_"+ts+".ovpn")
+	data, err := os.ReadFile(srcPath)
+	if err != nil {
+		return err
+	}
+	if err := os.WriteFile(dst, data, 0o644); err != nil {
+		return err
+	}
+	fmt.Printf("  [config] Previous server config backed up: %s\n", dst)
+	return nil
 }

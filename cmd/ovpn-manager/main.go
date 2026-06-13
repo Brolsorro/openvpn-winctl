@@ -7,18 +7,18 @@ import (
 	"os"
 	"strings"
 
-	"github.com/Brolsorro/ovpn-manager/internal/client"
-	"github.com/Brolsorro/ovpn-manager/internal/config"
-	"github.com/Brolsorro/ovpn-manager/internal/easyrsa"
-	"github.com/Brolsorro/ovpn-manager/internal/firewall"
-	"github.com/Brolsorro/ovpn-manager/internal/install"
-	"github.com/Brolsorro/ovpn-manager/internal/pki"
-	"github.com/Brolsorro/ovpn-manager/internal/server"
-	"github.com/Brolsorro/ovpn-manager/internal/system"
+	"github.com/YOUR_GITHUB_USERNAME/ovpn-manager/internal/client"
+	"github.com/YOUR_GITHUB_USERNAME/ovpn-manager/internal/config"
+	"github.com/YOUR_GITHUB_USERNAME/ovpn-manager/internal/easyrsa"
+	"github.com/YOUR_GITHUB_USERNAME/ovpn-manager/internal/firewall"
+	"github.com/YOUR_GITHUB_USERNAME/ovpn-manager/internal/install"
+	"github.com/YOUR_GITHUB_USERNAME/ovpn-manager/internal/pki"
+	"github.com/YOUR_GITHUB_USERNAME/ovpn-manager/internal/server"
+	"github.com/YOUR_GITHUB_USERNAME/ovpn-manager/internal/system"
 )
 
 const usage = `OpenVPN Manager for Windows  v` + install.Version + `
-https://github.com/Brolsorro/ovpn-manager
+https://github.com/YOUR_GITHUB_USERNAME/ovpn-manager
 
 Usage:
   openvpn-manager [--config <path>] <command> [flags]
@@ -32,7 +32,8 @@ Commands:
   version                       Show installed component versions
 
   setup [--ca-password] [--pki-only]
-  config generate               Regenerate server.ovpn from template
+  config generate               Regenerate server.ovpn (overwrites existing)
+  config update                 Safe update: backup existing, write new from config.yaml
 
   client add    --name <n> [--password] [--ca-password]
   client revoke --name <n> [--ca-password]
@@ -63,7 +64,7 @@ func main() {
 	}
 
 	globalFS := flag.NewFlagSet("global", flag.ContinueOnError)
-	cfgPath := globalFS.String("config", "", "path to config.yaml")
+	cfgPath  := globalFS.String("config", "", "path to config.yaml")
 	globalFS.Usage = func() { fmt.Print(usage) }
 
 	if err := globalFS.Parse(os.Args[1:]); err != nil {
@@ -138,7 +139,7 @@ func runUninstall(cfg *config.Config, args []string) {
 
 func runSetup(ctx context.Context, cfg *config.Config, args []string) {
 	fs := flag.NewFlagSet("setup", flag.ExitOnError)
-	pkiOnly := fs.Bool("pki-only", false, "only initialize PKI")
+	pkiOnly    := fs.Bool("pki-only", false, "only initialize PKI")
 	caPassword := fs.Bool("ca-password", false, "protect CA key with a passphrase")
 	fs.Parse(args)
 
@@ -173,10 +174,21 @@ func runSetup(ctx context.Context, cfg *config.Config, args []string) {
 }
 
 func runConfig(cfg *config.Config, args []string) {
-	if len(args) == 0 || args[0] != "generate" {
-		die("usage: config generate")
+	if len(args) == 0 {
+		die("usage: config <generate|update>")
 	}
-	must(server.WriteConfig(cfg))
+	switch args[0] {
+	case "generate":
+		// Write fresh config, overwrite existing
+		must(server.WriteConfig(cfg))
+	case "update":
+		// Safe update: backup existing, write new from config.yaml
+		// Previous config is preserved in pki-backups/server_<timestamp>.ovpn
+		must(server.UpdateConfig(cfg))
+		fmt.Println("Run: openvpn-manager service restart")
+	default:
+		die("unknown config subcommand: %s", args[0])
+	}
 }
 
 // ──────────────────────────────────────────────────────────────
@@ -194,8 +206,8 @@ func runClient(ctx context.Context, cfg *config.Config, args []string) {
 	switch sub {
 	case "add":
 		fs := flag.NewFlagSet("client add", flag.ExitOnError)
-		name := fs.String("name", "", "client name (required)")
-		password := fs.Bool("password", false, "protect client key with passphrase")
+		name       := fs.String("name", "", "client name (required)")
+		password   := fs.Bool("password", false, "protect client key with passphrase")
 		caPassword := fs.Bool("ca-password", false, "CA key is password-protected")
 		fs.Parse(rest)
 		requireFlag(*name, "--name")
@@ -206,7 +218,7 @@ func runClient(ctx context.Context, cfg *config.Config, args []string) {
 
 	case "revoke":
 		fs := flag.NewFlagSet("client revoke", flag.ExitOnError)
-		name := fs.String("name", "", "client name (required)")
+		name       := fs.String("name", "", "client name (required)")
 		caPassword := fs.Bool("ca-password", false, "CA key is password-protected")
 		fs.Parse(rest)
 		requireFlag(*name, "--name")
@@ -218,7 +230,7 @@ func runClient(ctx context.Context, cfg *config.Config, args []string) {
 
 	case "renew":
 		fs := flag.NewFlagSet("client renew", flag.ExitOnError)
-		name := fs.String("name", "", "client name (required)")
+		name       := fs.String("name", "", "client name (required)")
 		caPassword := fs.Bool("ca-password", false, "CA key is password-protected")
 		fs.Parse(rest)
 		requireFlag(*name, "--name")
@@ -346,7 +358,7 @@ func runFirewall(cfg *config.Config, args []string) {
 		die("usage: firewall <enable|disable|status>")
 	}
 	fs := flag.NewFlagSet("firewall", flag.ExitOnError)
-	port := fs.Int("port", cfg.Server.Port, "port")
+	port  := fs.Int("port", cfg.Server.Port, "port")
 	proto := fs.String("proto", cfg.Server.Proto, "protocol (udp, tcp)")
 	fs.Parse(args[1:])
 	p := strings.TrimSuffix(*proto, "4")

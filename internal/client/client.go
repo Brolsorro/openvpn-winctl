@@ -16,8 +16,8 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/Brolsorro/ovpn-manager/internal/config"
-	"github.com/Brolsorro/ovpn-manager/internal/easyrsa"
+	"github.com/YOUR_GITHUB_USERNAME/ovpn-manager/internal/config"
+	"github.com/YOUR_GITHUB_USERNAME/ovpn-manager/internal/easyrsa"
 )
 
 //go:embed templates/client.ovpn.tmpl
@@ -55,7 +55,7 @@ func (m *Manager) Add(ctx context.Context, name string, withPassword bool) error
 	}
 
 	certFile := filepath.Join(m.cfg.PkiDir, "issued", name+".crt")
-	keyFile := filepath.Join(m.cfg.PkiDir, "private", name+".key")
+	keyFile  := filepath.Join(m.cfg.PkiDir, "private", name+".key")
 	for _, f := range []string{certFile, keyFile} {
 		if _, err := os.Stat(f); err != nil {
 			return fmt.Errorf("expected PKI file not found: %s", f)
@@ -127,7 +127,7 @@ func (m *Manager) Renew(ctx context.Context, name string) error {
 	}
 	fmt.Println("[client] Certificate renewed. Rebuilding .ovpn...")
 	certFile := filepath.Join(m.cfg.PkiDir, "issued", name+".crt")
-	keyFile := filepath.Join(m.cfg.PkiDir, "private", name+".key")
+	keyFile  := filepath.Join(m.cfg.PkiDir, "private", name+".key")
 	return m.writeOVPN(name, certFile, keyFile)
 }
 
@@ -194,7 +194,7 @@ func (m *Manager) ListVerbose() error {
 		status := map[string]string{"V": "valid", "R": "revoked", "E": "expired"}[r.Status]
 		expStr, daysStr := "-", "-"
 		if r.Status == "V" {
-			expStr = r.ExpiresAt.Format("2006-01-02")
+			expStr  = r.ExpiresAt.Format("2006-01-02")
 			daysStr = fmt.Sprintf("%d", int(time.Until(r.ExpiresAt).Hours()/24))
 		}
 		ovpn := ""
@@ -214,19 +214,23 @@ func (m *Manager) ListVerbose() error {
 // .ovpn generation
 
 type ovpnData struct {
-	Name      string
-	Timestamp string
-	Proto     string
-	PublicIP  string
-	Port      int
-	Cipher    string
-	Auth      string
-	Network   string
-	Netmask   string
-	Verb      int
-	FastIO    bool
-	SndBuf    int
-	RcvBuf    int
+	Name        string
+	Timestamp   string
+	Proto       string
+	PublicIP    string
+	Port        int
+	Cipher      string
+	DataCiphers string
+	Network     string
+	Netmask     string
+	Verb        int
+	RouteNoPull bool
+	// RDP optimizations
+	RDPEnabled bool
+	SndBuf     int
+	RcvBuf     int
+	TunMTU     int
+	MSSFix     int
 }
 
 func (m *Manager) writeOVPN(name, certFile, keyFile string) error {
@@ -236,19 +240,22 @@ func (m *Manager) writeOVPN(name, certFile, keyFile string) error {
 	}
 
 	data := ovpnData{
-		Name:      name,
-		Timestamp: time.Now().Format("2006-01-02 15:04:05"),
-		Proto:     m.cfg.Server.Proto,
-		PublicIP:  pubIP,
-		Port:      m.cfg.Server.Port,
-		Cipher:    m.cfg.Server.Cipher,
-		Auth:      m.cfg.Server.Auth,
-		Network:   m.cfg.Server.Network,
-		Netmask:   m.cfg.Server.Netmask,
-		Verb:      m.cfg.Server.Verb,
-		FastIO:    m.cfg.Server.FastIO,
-		SndBuf:    m.cfg.Server.SndBuf,
-		RcvBuf:    m.cfg.Server.RcvBuf,
+		Name:        name,
+		Timestamp:   time.Now().Format("2006-01-02 15:04:05"),
+		Proto:       m.cfg.Server.Proto,
+		PublicIP:    pubIP,
+		Port:        m.cfg.Server.Port,
+		Cipher:      m.cfg.Server.Cipher,
+		DataCiphers: m.cfg.Server.DataCiphers,
+		Network:     m.cfg.Server.Network,
+		Netmask:     m.cfg.Server.Netmask,
+		Verb:        m.cfg.Client.Verb,
+		RouteNoPull: m.cfg.Client.RouteNoPull,
+		RDPEnabled:  m.cfg.Server.RDP.Enabled,
+		SndBuf:      m.cfg.Server.RDP.SndBuf,
+		RcvBuf:      m.cfg.Server.RDP.RcvBuf,
+		TunMTU:      m.cfg.Server.RDP.TunMTU,
+		MSSFix:      m.cfg.Server.RDP.MSSFix,
 	}
 
 	tmpl, err := template.New("client").Parse(clientTmpl)
@@ -280,10 +287,10 @@ func (m *Manager) writeOVPN(name, certFile, keyFile string) error {
 }
 
 func buildInlineSection(cfg *config.Config, certFile, keyFile string) string {
-	ca := readFile(filepath.Join(cfg.ConfigDir, "ca.crt"))
-	ta := readFile(cfg.TaKey)
+	ca   := readFile(filepath.Join(cfg.ConfigDir, "ca.crt"))
+	ta   := readFile(cfg.TaKey)
 	cert := readFile(certFile)
-	key := readFile(keyFile)
+	key  := readFile(keyFile)
 
 	var sb strings.Builder
 	if cfg.Server.TLSCrypt {
@@ -357,7 +364,13 @@ func readFile(path string) string {
 	if err != nil {
 		return fmt.Sprintf("# ERROR: cannot read %s\n", path)
 	}
-	return strings.TrimRight(string(data), "\r\n")
+	// Normalize line endings: 
+ -> 
+
+	// OpenVPN inline parser accepts both, but 
+ is cleaner in .ovpn files
+	normalized := strings.ReplaceAll(string(data), "\r\n", "\n")
+	return strings.TrimRight(normalized, "\r\n")
 }
 
 func copyFile(src, dst string) error {

@@ -8,12 +8,22 @@ nobind
 persist-key
 persist-tun
 remote-cert-tls server
+
+# Security
 cipher {{.Cipher}}
-auth {{.Auth}}
-auth-nocache
+{{if .DataCiphers}}data-ciphers {{.DataCiphers}}
+{{end}}allow-compression no
+
+{{if .RouteNoPull}}# Routes managed locally
 route-nopull
 route {{.Network}} {{.Netmask}}
+{{end}}
 verb {{.Verb}}
-{{if .FastIO}}fast-io
-{{end}}sndbuf {{.SndBuf}}
+
+{{if .RDPEnabled}}# RDP/performance optimizations
+fast-io
+sndbuf {{.SndBuf}}
 rcvbuf {{.RcvBuf}}
+tun-mtu {{.TunMTU}}
+mssfix {{.MSSFix}}
+{{end}}

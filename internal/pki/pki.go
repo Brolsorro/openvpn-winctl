@@ -10,8 +10,8 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"github.com/Brolsorro/ovpn-manager/internal/config"
-	"github.com/Brolsorro/ovpn-manager/internal/easyrsa"
+	"github.com/YOUR_GITHUB_USERNAME/ovpn-manager/internal/config"
+	"github.com/YOUR_GITHUB_USERNAME/ovpn-manager/internal/easyrsa"
 )
 
 // Manager handles PKI initialization and maintenance.

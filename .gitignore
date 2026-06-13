@@ -1,0 +1,7 @@
+openvpn-manager.exe
+*.exe
+*.test
+*.out
+dist/
+vendor/
+config.yaml

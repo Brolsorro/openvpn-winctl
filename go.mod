@@ -1,4 +1,4 @@
-module github.com/Brolsorro/ovpn-manager
+module github.com/YOUR_GITHUB_USERNAME/ovpn-manager
 
 go 1.22
 

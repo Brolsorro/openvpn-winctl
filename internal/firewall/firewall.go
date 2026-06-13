@@ -18,7 +18,7 @@ func EnsureRule(port int, proto string) error {
 	name := ruleName(port, proto)
 
 	if err := exec.Command("netsh", "advfirewall", "firewall", "show", "rule",
-		"name="+name).Run(); err == nil {
+		"name="+name, "verbose=no").Run(); err == nil {
 		fmt.Printf("[firewall] Rule already exists: %s\n", name)
 		return nil
 	}
@@ -40,7 +40,8 @@ func EnsureRule(port int, proto string) error {
 // DeleteRule removes the OpenVPN firewall rule.
 func DeleteRule(port int, proto string) error {
 	out, err := exec.Command("netsh", "advfirewall", "firewall", "delete", "rule",
-		"name="+ruleName(port, proto)).CombinedOutput()
+		"name="+ruleName(port, proto), "protocol="+proto,
+		"localport="+strconv.Itoa(port)).CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("delete firewall rule: %w\n%s", err, out)
 	}

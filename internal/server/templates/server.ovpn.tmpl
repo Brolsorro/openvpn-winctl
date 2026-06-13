@@ -1,32 +1,41 @@
 # Generated {{.Timestamp}}
+# DO NOT EDIT — managed by ovpnctl. Use "ovpnctl config update" to change settings.
+
 port {{.Port}}
 proto {{.Proto}}
 dev tun
-
+{{if .NoCompression}}allow-compression no
+{{end}}
 ca "{{.ConfigDir}}\ca.crt"
 cert "{{.ConfigDir}}\server.crt"
 key "{{.ConfigDir}}\server.key"
 dh "{{.ConfigDir}}\dh.pem"
 {{.TLSLine}}
-crl-verify "{{.ConfigDir}}\crl.pem"
-
+{{if .CRLLine}}{{.CRLLine}}
+{{end}}
 server {{.Network}} {{.Netmask}}
 topology {{.Topology}}
 persist-key
 persist-tun
 
 cipher {{.Cipher}}
-auth {{.Auth}}
+{{if .DataCiphers}}data-ciphers {{.DataCiphers}}
+{{end}}auth {{.Auth}}
 keepalive {{.Keepalive}}
-{{if .FastIO}}fast-io
-{{end}}sndbuf {{.SndBuf}}
-rcvbuf {{.RcvBuf}}
-push "sndbuf {{.SndBuf}}"
-push "rcvbuf {{.RcvBuf}}"
 
+{{range .PushRoutes}}push "{{.}}"
+{{end}}{{range .ExtraPushRoutes}}push "{{.}}"
+{{end}}
 status "{{.LogsDir}}\openvpn-status.log"
 log    "{{.LogsDir}}\openvpn.log"
 verb {{.Verb}}
-{{if .PushRoutes}}
-{{.PushRoutes}}
+{{if .RDPEnabled}}
+# RDP/performance optimizations
+fast-io
+sndbuf {{.SndBuf}}
+rcvbuf {{.RcvBuf}}
+push "sndbuf {{.SndBuf}}"
+push "rcvbuf {{.RcvBuf}}"
+tun-mtu {{.TunMTU}}
+mssfix {{.MSSFix}}
 {{end}}

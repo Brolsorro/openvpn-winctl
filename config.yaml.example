@@ -1,0 +1,43 @@
+# OpenVPN Manager configuration
+# Place this file next to openvpn-manager.exe
+
+openvpn_root: "C:\\Program Files\\OpenVPN"
+
+server:
+  public_ip: ""            # leave empty for auto-detect via api.ipify.org
+  port: 1194
+  proto: udp               # udp or tcp
+  network: "192.168.170.0"
+  netmask: "255.255.255.0"
+  topology: subnet
+  cipher: AES-128-GCM
+  data_ciphers: "AES-128-GCM:CHACHA20-POLY1305"
+  auth: SHA256
+  keepalive: "10 60"
+  tls_crypt: true          # false = use tls-auth instead
+  verb: 2
+  allow_compression: false # false = allow-compression no (required for DCO)
+
+  # Routes pushed to all clients
+  push_routes:
+    - "route 192.168.170.0 255.255.255.0"
+  # Any additional push directives
+  extra_push_routes: []    # e.g. ["redirect-gateway def1"]
+
+  # RDP/performance optimizations
+  # Disable to use OpenVPN defaults
+  rdp:
+    enabled: true
+    fast_io: true
+    snd_buf: 2097152        # 2MB socket send buffer
+    rcv_buf: 2097152        # 2MB socket recv buffer
+    tun_mtu: 1400           # tun MTU (helps with fragmentation)
+    mssfix: 1360            # TCP MSS clamp
+
+client:
+  inline_keys: true         # embed certs into .ovpn (recommended)
+  route_nopull: false       # false = server pushes routes; true = local route only
+  verb: 1
+
+backup:
+  enabled: true

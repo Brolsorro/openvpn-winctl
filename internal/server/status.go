@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Brolsorro/ovpn-manager/internal/config"
+	"github.com/YOUR_GITHUB_USERNAME/ovpn-manager/internal/config"
 )
 
 // Connection represents an active OpenVPN client session.

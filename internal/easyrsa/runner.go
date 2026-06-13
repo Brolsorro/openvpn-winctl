@@ -38,7 +38,7 @@ import (
 
 	"golang.org/x/term"
 
-	"github.com/Brolsorro/ovpn-manager/internal/config"
+	"github.com/YOUR_GITHUB_USERNAME/ovpn-manager/internal/config"
 )
 
 // Commander is the interface for running easyrsa commands.
@@ -214,13 +214,16 @@ func (r *Runner) buildEnv(passout []byte) (env []string, cleanup func(), err err
 	}
 
 	// CA passphrase → EASYRSA_PASSIN=file:<tmp>
+	// EasyRSA passes this to openssl via -passin flag.
+	// openssl file: prefix requires forward slashes on all platforms.
 	if len(r.caPass) > 0 {
 		f, ferr := writeTempPass(r.caPass)
 		if ferr != nil {
 			return nil, cleanup, fmt.Errorf("write CA passin file: %w", ferr)
 		}
 		tempFiles = append(tempFiles, f)
-		env = append(env, "EASYRSA_PASSIN=file:"+f)
+		// Convert to forward slashes — openssl file: prefix requires it
+		env = append(env, "EASYRSA_PASSIN=file:"+toUnixPath(f))
 	}
 
 	// New key passphrase → EASYRSA_PASSOUT=file:<tmp>
@@ -230,7 +233,7 @@ func (r *Runner) buildEnv(passout []byte) (env []string, cleanup func(), err err
 			return nil, cleanup, fmt.Errorf("write passout file: %w", ferr)
 		}
 		tempFiles = append(tempFiles, f)
-		env = append(env, "EASYRSA_PASSOUT=file:"+f)
+		env = append(env, "EASYRSA_PASSOUT=file:"+toUnixPath(f))
 	}
 
 	return env, cleanup, nil
@@ -300,6 +303,11 @@ func removeLockFile(pkiDir string) {
 		fmt.Println("  Removing stale lock file...")
 		_ = os.Remove(lock)
 	}
+}
+
+// toUnixPath converts a Windows path to forward-slash format for openssl file: prefix.
+func toUnixPath(p string) string {
+	return strings.ReplaceAll(p, `\`, `/`)
 }
 
 // writeTempPass writes passphrase bytes to a 0600 temp file and returns its path.
@@ -391,9 +399,4 @@ func copyFile(src, dst string, mode os.FileMode) error {
 	return err
 }
 
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}
+

@@ -24,9 +24,16 @@ GOOS=windows GOARCH=amd64 CGO_ENABLED=0 \
 
 ## Setup
 
-1. Copy `openvpn-manager.exe` and `config.yaml` to the same directory
-2. Edit `config.yaml` — at minimum set `server.public_ip`
-3. Run from an Administrator terminal
+1. Copy `openvpn-manager.exe` and `config.yaml.example` to the same directory
+2. Create your config from the example:
+   ```powershell
+   copy config.yaml.example config.yaml
+   ```
+3. Edit `config.yaml` — at minimum set `server.public_ip`
+4. Run from an Administrator terminal
+
+> `config.yaml` is in `.gitignore` — your server IP and settings
+> stay out of version control. Commit only `config.yaml.example`.
 
 ```powershell
 .\openvpn-manager.exe setup
