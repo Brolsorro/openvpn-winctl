@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/Brolsorro/ovpn-manager/internal/client"
@@ -52,6 +53,12 @@ Commands:
   server connections            Show active VPN connections
 
   service start|stop|restart|status
+  service autostart             Enable autostart with Windows
+  service autostart --disable   Disable autostart (set to manual)
+  service log [-f] [-n <lines>] [-file <openvpn|status>]
+
+  log [-f] [-n <lines>] [-file <openvpn|status>]
+      Show OpenVPN log. -f = follow mode (Ctrl+C to stop)
   firewall enable|disable       [--port <n>] [--proto <udp|tcp>]
   firewall status
   routing enable|disable|status
@@ -64,7 +71,7 @@ func main() {
 	}
 
 	globalFS := flag.NewFlagSet("global", flag.ContinueOnError)
-	cfgPath := globalFS.String("config", "", "path to config.yaml")
+	cfgPath  := globalFS.String("config", "", "path to config.yaml")
 	globalFS.Usage = func() { fmt.Print(usage) }
 
 	if err := globalFS.Parse(os.Args[1:]); err != nil {
@@ -102,7 +109,9 @@ func main() {
 	case "server":
 		runServer(cfg, rest)
 	case "service":
-		runService(rest)
+		runService(ctx, cfg, rest)
+	case "log", "logs":
+		runLog(ctx, cfg, rest)
 	case "firewall":
 		runFirewall(cfg, rest)
 	case "routing":
@@ -139,7 +148,7 @@ func runUninstall(cfg *config.Config, args []string) {
 
 func runSetup(ctx context.Context, cfg *config.Config, args []string) {
 	fs := flag.NewFlagSet("setup", flag.ExitOnError)
-	pkiOnly := fs.Bool("pki-only", false, "only initialize PKI")
+	pkiOnly    := fs.Bool("pki-only", false, "only initialize PKI")
 	caPassword := fs.Bool("ca-password", false, "protect CA key with a passphrase")
 	fs.Parse(args)
 
@@ -206,8 +215,8 @@ func runClient(ctx context.Context, cfg *config.Config, args []string) {
 	switch sub {
 	case "add":
 		fs := flag.NewFlagSet("client add", flag.ExitOnError)
-		name := fs.String("name", "", "client name (required)")
-		password := fs.Bool("password", false, "protect client key with passphrase")
+		name       := fs.String("name", "", "client name (required)")
+		password   := fs.Bool("password", false, "protect client key with passphrase")
 		caPassword := fs.Bool("ca-password", false, "CA key is password-protected")
 		fs.Parse(rest)
 		requireFlag(*name, "--name")
@@ -218,7 +227,7 @@ func runClient(ctx context.Context, cfg *config.Config, args []string) {
 
 	case "revoke":
 		fs := flag.NewFlagSet("client revoke", flag.ExitOnError)
-		name := fs.String("name", "", "client name (required)")
+		name       := fs.String("name", "", "client name (required)")
 		caPassword := fs.Bool("ca-password", false, "CA key is password-protected")
 		fs.Parse(rest)
 		requireFlag(*name, "--name")
@@ -230,7 +239,7 @@ func runClient(ctx context.Context, cfg *config.Config, args []string) {
 
 	case "renew":
 		fs := flag.NewFlagSet("client renew", flag.ExitOnError)
-		name := fs.String("name", "", "client name (required)")
+		name       := fs.String("name", "", "client name (required)")
 		caPassword := fs.Bool("ca-password", false, "CA key is password-protected")
 		fs.Parse(rest)
 		requireFlag(*name, "--name")
@@ -330,9 +339,9 @@ func runServer(cfg *config.Config, args []string) {
 // ──────────────────────────────────────────────────────────────
 // service
 
-func runService(args []string) {
+func runService(ctx context.Context, cfg *config.Config, args []string) {
 	if len(args) == 0 {
-		die("usage: service <start|stop|restart|status>")
+		die("usage: service <start|stop|restart|status|autostart|log>")
 	}
 	switch args[0] {
 	case "start":
@@ -345,9 +354,31 @@ func runService(args []string) {
 		st, err := system.Status()
 		must(err)
 		fmt.Printf("%s: %s\n", system.ServiceName, st)
+	case "autostart":
+		fs := flag.NewFlagSet("service autostart", flag.ExitOnError)
+		disable := fs.Bool("disable", false, "disable autostart (set to manual)")
+		fs.Parse(args[1:])
+		must(system.SetAutoStart(!*disable))
+	case "log":
+		runLog(ctx, cfg, args[1:])
 	default:
 		die("unknown service subcommand: %s", args[0])
 	}
+}
+
+func runLog(ctx context.Context, cfg *config.Config, args []string) {
+	fs := flag.NewFlagSet("log", flag.ExitOnError)
+	follow := fs.Bool("f", false, "follow log output (like tail -f)")
+	lines  := fs.Int("n", 50, "number of lines to show")
+	which  := fs.String("file", "openvpn", "log file: openvpn or status")
+	fs.Parse(args)
+
+	logFile := filepath.Join(cfg.LogsDir, "openvpn.log")
+	if *which == "status" {
+		logFile = filepath.Join(cfg.LogsDir, "openvpn-status.log")
+	}
+
+	must(system.TailLog(ctx, logFile, *lines, *follow))
 }
 
 // ──────────────────────────────────────────────────────────────
@@ -358,7 +389,7 @@ func runFirewall(cfg *config.Config, args []string) {
 		die("usage: firewall <enable|disable|status>")
 	}
 	fs := flag.NewFlagSet("firewall", flag.ExitOnError)
-	port := fs.Int("port", cfg.Server.Port, "port")
+	port  := fs.Int("port", cfg.Server.Port, "port")
 	proto := fs.String("proto", cfg.Server.Proto, "protocol (udp, tcp)")
 	fs.Parse(args[1:])
 	p := strings.TrimSuffix(*proto, "4")
