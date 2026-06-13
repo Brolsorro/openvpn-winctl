@@ -21,24 +21,24 @@ topology {{.Topology}}
 
 cipher {{.Cipher}}
 {{if .DataCiphers}}data-ciphers {{.DataCiphers}}
-{{end}}auth {{.Auth}}
-keepalive {{.Keepalive}}
+{{end}}{{if .Auth}}auth {{.Auth}}
+{{end}}keepalive {{.Keepalive}}
 
 {{range .PushRoutes}}push "{{.}}"
 {{end}}{{range .ExtraPushRoutes}}push "{{.}}"
 {{end}}
 # When running as a Windows service, OpenVPN writes to:
-# C:\ProgramData\OpenVPN\Log\<config-name>.log
-# The status file below is written by OpenVPN regardless of service mode.
+# C:\ProgramData\OpenVPN\Log\server.log
 status "{{.StatusLog}}"
 verb {{.Verb}}
 {{if .RDPEnabled}}
 # RDP/performance optimizations
-fast-io
+# NOTE: fast-io is omitted — it disables DCO in OpenVPN 2.6+
 sndbuf {{.SndBuf}}
 rcvbuf {{.RcvBuf}}
 push "sndbuf {{.SndBuf}}"
 push "rcvbuf {{.RcvBuf}}"
 tun-mtu {{.TunMTU}}
 mssfix {{.MSSFix}}
-{{end}}
+{{if .FastIO}}fast-io
+{{end}}{{end}}

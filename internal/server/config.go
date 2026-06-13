@@ -40,6 +40,7 @@ type serverData struct {
 	Verb            int
 	// RDP optimizations
 	RDPEnabled bool
+	FastIO     bool
 	SndBuf     int
 	RcvBuf     int
 	TunMTU     int
@@ -87,11 +88,22 @@ func buildServerData(cfg *config.Config) serverData {
 		StatusLog:        logsDir + "/openvpn-status.log",
 		Verb:             cfg.Server.Verb,
 		RDPEnabled:       cfg.Server.RDP.Enabled,
+		FastIO:           cfg.Server.RDP.FastIO,
 		SndBuf:           cfg.Server.RDP.SndBuf,
 		RcvBuf:           cfg.Server.RDP.RcvBuf,
 		TunMTU:           cfg.Server.RDP.TunMTU,
 		MSSFix:           cfg.Server.RDP.MSSFix,
 	}
+}
+
+// authValue returns empty string when auth is "none" or empty,
+// so the template skips the auth directive entirely.
+// With AEAD ciphers (GCM/CHACHA20), auth is built-in — explicit auth breaks DCO.
+func authValue(a string) string {
+	if a == "" || a == "none" {
+		return ""
+	}
+	return a
 }
 
 // windowsDriver returns the windows-driver value for OpenVPN < 2.7.

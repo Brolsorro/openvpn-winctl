@@ -12,6 +12,7 @@ remote-cert-tls server
 # Security
 cipher {{.Cipher}}
 {{if .DataCiphers}}data-ciphers {{.DataCiphers}}
+{{end}}{{if .Auth}}auth {{.Auth}}
 {{end}}allow-compression no
 auth-nocache
 
@@ -22,9 +23,10 @@ route {{.Network}} {{.Netmask}}
 verb {{.Verb}}
 
 {{if .RDPEnabled}}# RDP/performance optimizations
-fast-io
+# NOTE: fast-io disables DCO — omit if DCO is needed
 sndbuf {{.SndBuf}}
 rcvbuf {{.RcvBuf}}
 tun-mtu {{.TunMTU}}
 mssfix {{.MSSFix}}
-{{end}}
+{{if .FastIO}}fast-io
+{{end}}{{end}}

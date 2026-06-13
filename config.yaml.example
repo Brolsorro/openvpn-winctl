@@ -2,6 +2,8 @@
 # Place this file next to openvpn-manager.exe
 
 openvpn_root: "C:\\Program Files\\OpenVPN"
+openvpn_version: 27  # major version: 26 = OpenVPN 2.6.x, 27 = OpenVPN 2.7.x
+                     # affects: windows-driver (removed in 2.7), persist-key (ignored in 2.7)
 
 server:
   public_ip: ""            # leave empty for auto-detect via api.ipify.org
@@ -13,7 +15,8 @@ server:
   topology: subnet
   cipher: AES-128-GCM
   data_ciphers: "AES-128-GCM:CHACHA20-POLY1305"
-  auth: SHA256
+  auth: none       # none = let AEAD cipher handle auth (required for DCO)
+                   # SHA256 = explicit HMAC (disables DCO, use only with CBC ciphers)
   keepalive: "10 60"
   tls_crypt: true          # false = use tls-auth instead
   verb: 2
@@ -29,7 +32,7 @@ server:
   # Disable to use OpenVPN defaults
   rdp:
     enabled: true
-    fast_io: true
+    fast_io: false     # true = enables fast-io BUT disables DCO — choose one
     snd_buf: 2097152        # 2MB socket send buffer
     rcv_buf: 2097152        # 2MB socket recv buffer
     tun_mtu: 1400           # tun MTU (helps with fragmentation)

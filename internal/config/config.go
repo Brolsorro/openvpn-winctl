@@ -12,12 +12,14 @@ import (
 // RDPOptimizations holds network tuning settings for RDP-over-VPN performance.
 // These settings disable compression, maximize buffers and tune MTU.
 type RDPOptimizations struct {
-	Enabled    bool `yaml:"enabled"`
-	SndBuf     int  `yaml:"snd_buf"`   // socket send buffer, bytes
-	RcvBuf     int  `yaml:"rcv_buf"`   // socket recv buffer, bytes
-	TunMTU     int  `yaml:"tun_mtu"`   // tun interface MTU
-	MSSFix     int  `yaml:"mssfix"`    // TCP MSS clamp
-	FastIO     bool `yaml:"fast_io"`   // enable fast-io
+	Enabled bool `yaml:"enabled"`
+	SndBuf  int  `yaml:"snd_buf"` // socket send buffer, bytes
+	RcvBuf  int  `yaml:"rcv_buf"` // socket recv buffer, bytes
+	TunMTU  int  `yaml:"tun_mtu"` // tun interface MTU
+	MSSFix  int  `yaml:"mssfix"`  // TCP MSS clamp
+	// FastIO improves performance but DISABLES DCO in OpenVPN 2.6+.
+	// Leave false if you want DCO (kernel-space crypto offload).
+	FastIO  bool `yaml:"fast_io"`
 }
 
 // Server holds OpenVPN server settings.
@@ -151,7 +153,7 @@ func defaults() *Config {
 			Topology:         "subnet",
 			Cipher:           "AES-128-GCM",
 			DataCiphers:      "AES-128-GCM:CHACHA20-POLY1305",
-			Auth:             "SHA256",
+			Auth:             "none", // AEAD ciphers (GCM) have built-in auth — SHA256 breaks DCO
 			Keepalive:        "10 60",
 			TLSCrypt:         true,
 			Verb:             2,
@@ -163,7 +165,7 @@ func defaults() *Config {
 				RcvBuf:  2097152,
 				TunMTU:  1400,
 				MSSFix:  1360,
-				FastIO:  true,
+				FastIO:  false, // set true only if you do not need DCO
 			},
 		},
 		Client: Client{
