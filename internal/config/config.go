@@ -25,6 +25,7 @@ type Server struct {
 	PublicIP        string           `yaml:"public_ip"`
 	Port            int              `yaml:"port"`
 	Proto           string           `yaml:"proto"`
+	WindowsDriver   string           `yaml:"windows_driver"` // wintun (DCO) or tap-windows6
 	Network         string           `yaml:"network"`
 	Netmask         string           `yaml:"netmask"`
 	Topology        string           `yaml:"topology"`
@@ -140,7 +141,8 @@ func defaults() *Config {
 	return &Config{
 		OpenVPNRoot: `C:\Program Files\OpenVPN`,
 		Server: Server{
-			Port:             1194,
+			WindowsDriver:    "wintun",
+		Port:             1194,
 			Proto:            "udp",
 			Network:          "192.168.170.0",
 			Netmask:          "255.255.255.0",

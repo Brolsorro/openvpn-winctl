@@ -4,7 +4,8 @@
 port {{.Port}}
 proto {{.Proto}}
 dev tun
-{{if .NoCompression}}allow-compression no
+{{if .WindowsDriver}}windows-driver {{.WindowsDriver}}
+{{end}}{{if .NoCompression}}allow-compression no
 {{end}}
 ca "{{.ConfigDir}}/ca.crt"
 cert "{{.ConfigDir}}/server.crt"

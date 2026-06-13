@@ -25,6 +25,7 @@ type serverData struct {
 	TLSLine       string
 	CRLLine       string
 	NoCompression bool   // true = emit "allow-compression no"
+	WindowsDriver string
 	Network       string
 	Netmask         string
 	Topology        string
@@ -70,6 +71,7 @@ func buildServerData(cfg *config.Config) serverData {
 		TLSLine:       tlsLine,
 		CRLLine:       crlLine,
 		NoCompression: !cfg.Server.AllowCompression,
+		WindowsDriver: cfg.Server.WindowsDriver,
 		Network:       cfg.Server.Network,
 		Netmask:          cfg.Server.Netmask,
 		Topology:         cfg.Server.Topology,

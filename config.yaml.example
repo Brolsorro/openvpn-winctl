@@ -7,6 +7,7 @@ server:
   public_ip: ""            # leave empty for auto-detect via api.ipify.org
   port: 1194
   proto: udp               # udp or tcp
+  windows_driver: wintun   # wintun (DCO, recommended) or tap-windows6 (legacy)
   network: "192.168.170.0"
   netmask: "255.255.255.0"
   topology: subnet
