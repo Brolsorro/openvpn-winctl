@@ -1,3 +1,5 @@
+IN DEVELOPMENT
+
 # ovpn-manager
 
 CLI tool for managing OpenVPN 2.6.x + EasyRSA 3.x on Windows.
