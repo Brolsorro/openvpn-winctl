@@ -1,5 +1,12 @@
 # ovpn-manager
 
+> **⚠️ WORK IN PROGRESS — не использовать в production**
+>
+> Это тестовая версия в активной разработке. API, конфигурация и поведение могут меняться без предупреждения. Обратная совместимость не гарантируется.
+
+![Status](https://img.shields.io/badge/status-development-orange)
+![Stability](https://img.shields.io/badge/stability-experimental-red)
+
 CLI tool for managing OpenVPN 2.6.x + EasyRSA 3.x on Windows.
 
 Single self-contained `.exe` — no dependencies, no runtime required.
